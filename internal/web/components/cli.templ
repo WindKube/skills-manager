@@ -97,11 +97,19 @@ templ cliInstallModal(s view.CLI) {
 								if s.DownloadBase != "" {
 									<code class="am-cli-cmd am-mono">{ d.InstallCommand(s.DownloadBase) }</code>
 								}
+								if d.SHA256 != "" {
+									<div class="am-cli-sum">
+										<span class="am-cli-sum-label">SHA-256</span>
+										<span class="am-cli-sum-value am-mono">{ d.SHA256 }</span>
+									</div>
+								}
 							</div>
 						}
 					</div>
 					<p class="am-note">
-						Each archive holds the amctl binary. Put it somewhere on your PATH.
+						Each archive holds the amctl binary. Check its digest with
+						<span class="am-mono">shasum -a 256</span> before you run it, then put it
+						somewhere on your PATH.
 					</p>
 				}
 				<div class="am-label">2 · Sign in to this hub</div>

@@ -248,3 +248,19 @@ func TestCLIDownloadWithNoDirectoryConfiguredIsNotFound(t *testing.T) {
 	_, h := cliServer(t)
 	require.Equal(t, http.StatusNotFound, getSignedOut(t, h, "/cli/download/linux/amd64").Code)
 }
+
+func TestCLIInstallDialogShowsTheDigestGoreleaserRecordedForEachArchive(t *testing.T) {
+	linux := strings.Repeat("a", 64)
+	dist := cliDist(t, "amctl_0.9.0_linux_amd64.tar.gz", "amctl_0.9.0_darwin_arm64.tar.gz")
+	require.NoError(t, os.WriteFile(filepath.Join(dist, "checksums.txt"), []byte(
+		linux+"  amctl_0.9.0_linux_amd64.tar.gz\n"+
+			"not-a-digest  amctl_0.9.0_darwin_arm64.tar.gz\n"+
+			strings.Repeat("b", 64)+"  amctl_0.8.0_linux_amd64.tar.gz\n",
+	), 0o600))
+
+	body := get(t, cliDownloadServer(t, dist), "/cli").Body.String()
+	require.Contains(t, body, linux)
+	require.NotContains(t, body, "not-a-digest")
+	require.NotContains(t, body, strings.Repeat("b", 64))
+	require.Equal(t, 1, strings.Count(body, "am-cli-sum-value"))
+}

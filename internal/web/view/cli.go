@@ -42,6 +42,8 @@ type CLIPlatform struct {
 type CLIDownload struct {
 	CLIPlatform
 	Version string
+	// SHA256 is the archive's digest from goreleaser's checksums.txt; empty when it lists none.
+	SHA256 string
 }
 
 func (d CLIDownload) Path() string { return "/cli/download/" + d.OS + "/" + d.Arch }

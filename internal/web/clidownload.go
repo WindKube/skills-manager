@@ -1,10 +1,14 @@
 package web
 
 import (
+	"bufio"
+	"errors"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/mod/semver"
@@ -22,12 +26,16 @@ var cliPlatforms = []view.CLIPlatform{
 	{OS: "linux", Arch: "arm64", Label: "Linux · ARM64"},
 }
 
-var cliArchiveName = regexp.MustCompile(`^amctl_(.+)_(darwin|linux)_(amd64|arm64)\.tar\.gz$`)
+var (
+	cliArchiveName = regexp.MustCompile(`^amctl_(.+)_(darwin|linux)_(amd64|arm64)\.tar\.gz$`)
+	sha256Hex      = regexp.MustCompile(`^[0-9a-f]{64}$`)
+)
 
 type cliArchive struct {
 	version string
 	path    string
 	name    string
+	sha256  string
 }
 
 // cliArchives maps "os/arch" to the newest archive in dir. It reads the directory
@@ -55,7 +63,40 @@ func cliArchives(dir string) (map[string]cliArchive, error) {
 			found[key] = candidate
 		}
 	}
+
+	sums, err := cliChecksums(filepath.Join(dir, "checksums.txt"))
+	if err != nil {
+		return nil, err
+	}
+	for key, archive := range found {
+		archive.sha256 = sums[archive.name]
+		found[key] = archive
+	}
 	return found, nil
+}
+
+// cliChecksums reads goreleaser's "<sha256>  <file>" lines. A missing file is no
+// checksums, not an error; a malformed line is skipped rather than shown.
+func cliChecksums(path string) (map[string]string, error) {
+	f, err := os.Open(path) //nolint:gosec // a fixed name inside the operator-configured directory
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = f.Close() }()
+
+	sums := map[string]string{}
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		fields := strings.Fields(scanner.Text())
+		if len(fields) != 2 || !sha256Hex.MatchString(fields[0]) {
+			continue
+		}
+		sums[fields[1]] = fields[0]
+	}
+	return sums, scanner.Err()
 }
 
 // cliDownloads is what the install dialog lists, in cliPlatforms order.
@@ -71,7 +112,7 @@ func (s *Server) cliDownloads(c *gin.Context) []view.CLIDownload {
 		if !ok {
 			continue
 		}
-		downloads = append(downloads, view.CLIDownload{CLIPlatform: p, Version: archive.version})
+		downloads = append(downloads, view.CLIDownload{CLIPlatform: p, Version: archive.version, SHA256: archive.sha256})
 	}
 	return downloads
 }

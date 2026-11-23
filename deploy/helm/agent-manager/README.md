@@ -33,6 +33,17 @@ respectively; with `existingSecret` that check is yours.
 | notifier | `am_notifier` | `am_queue` | — | — |
 | migrate | `am_migrate` | `am_queue` | — | — |
 
+## CLI downloads
+
+The Connect-the-CLI screen offers amctl for download from the hub itself when
+`web.cliDist.volume` names a volume holding goreleaser's output for the CLI: the
+`amctl_<version>_<os>_<arch>.tar.gz` archives and `checksums.txt`. Any pod volume source
+works (a PersistentVolumeClaim, an OCI image volume, NFS). It is mounted read-only, and
+the files must be readable by UID 10001. Fill it from a CLI release's assets. The archives
+are not built into the image, because a darwin amctl needs CGO for the macOS keychain and
+the image is a CGO-off Linux build. Leave the value empty and the dialog says no downloads
+are served, but still shows the login command.
+
 ## Network
 
 `networkPolicy.enabled` (on by default) denies everything, then allows: web → api; api and the

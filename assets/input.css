@@ -2367,6 +2367,24 @@
     color: var(--fg3);
   }
 
+  .am-cli-sum {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    font-size: 11px;
+    color: var(--fg3);
+  }
+
+  .am-cli-sum-label {
+    flex: 0 0 auto;
+  }
+
+  .am-cli-sum-value {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    user-select: all;
+  }
+
   /* Commands are copied by hand, so a click selects the whole line and a long
      URL wraps rather than widening the dialog. */
   .am-cli-cmd {

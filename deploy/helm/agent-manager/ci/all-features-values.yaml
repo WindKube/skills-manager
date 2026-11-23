@@ -40,3 +40,7 @@ api:
     AGENT_MANAGER_BLOB_URL: s3://bucket?region=eu-west-1
 web:
   existingSecret: web-credentials
+  cliDist:
+    volume:
+      persistentVolumeClaim:
+        claimName: amctl-dist
