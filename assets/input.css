@@ -2269,6 +2269,117 @@
     font-family: var(--font-mono);
   }
 
+  /* The scrim colour is inline in the markup, as the other overlays' are. */
+  .am-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 64px 16px;
+    overflow: auto;
+  }
+
+  .am-modal {
+    width: 100%;
+    max-width: 600px;
+    border: 1px solid var(--bd);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+    overflow: hidden;
+  }
+
+  .am-modal-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--bd);
+  }
+
+  .am-modal-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .am-modal-title {
+    font-size: 17px;
+    font-weight: 500;
+  }
+
+  .am-modal-sub {
+    font-size: 12.5px;
+    color: var(--fg2);
+  }
+
+  .am-modal-close {
+    border: 0;
+    background: none;
+    font-size: 16px;
+    line-height: 1;
+    color: var(--fg3);
+    cursor: pointer;
+  }
+
+  .am-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 18px 24px;
+  }
+
+  .am-modal-foot {
+    display: flex;
+    justify-content: flex-end;
+    padding: 14px 24px 20px;
+  }
+
+  .am-cli-dl-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .am-cli-dl {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .am-cli-dl-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .am-cli-dl-label {
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .am-cli-dl-version {
+    flex: 1;
+    font-size: 12px;
+    color: var(--fg3);
+  }
+
+  /* Commands are copied by hand, so a click selects the whole line and a long
+     URL wraps rather than widening the dialog. */
+  .am-cli-cmd {
+    display: block;
+    padding: 8px 10px;
+    border: 1px solid var(--bd);
+    border-radius: 8px;
+    background: var(--surface2);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+    user-select: all;
+  }
+
   /* Catalog refresh -------------------------------------------------------- */
 
   .am-btn-icon {

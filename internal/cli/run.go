@@ -158,6 +158,7 @@ func runWeb(ctx context.Context) error {
 		// Fixes the cookies' Secure flag so a TLS-terminating proxy cannot drop it per request.
 		PublicBaseURL:     cfg.PublicBaseURL,
 		HubURL:            cfg.HubURL,
+		CLIDistDir:        cfg.CLIDistDir,
 		ProviderName:      cfg.ProviderName,
 		DevCredentialHint: cfg.DevCredentialHint,
 		DevCredentials:    devCredentials(cfg.DevCredentialHint),
