@@ -105,13 +105,15 @@ func (s *Server) importRegister(c *gin.Context) {
 	}
 }
 
-// registeredNotice is warn rather than ok: a 202 means nothing has been scanned yet.
 func registeredNotice(result view.ImportResult) *view.Notice {
-	text := "Registered " + result.ID
-	if result.Version != "" {
-		text += "@" + result.Version
+	return view.CatalogNoticeFrom(view.CatalogNoticeRegistered, registeredID(result))
+}
+
+func registeredID(result view.ImportResult) string {
+	if result.Version == "" {
+		return result.ID
 	}
-	return &view.Notice{Tone: "warn", Text: text + ". The fetch is queued; the scan follows it."}
+	return result.ID + "@" + result.Version
 }
 
 // closedImportSignals also resets every field, so reopening cannot resubmit the last registration.

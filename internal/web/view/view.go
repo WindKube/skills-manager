@@ -217,7 +217,14 @@ func (p CatalogPage) Empty() bool { return len(p.Rows) == 0 }
 
 // CatalogNoticeFrom is a package delete's acknowledgement; it lands on the catalog because the deleted
 // package's own page now 404s.
+// CatalogNoticeRegistered is the editor's redirect after a publish; warn rather than ok, since nothing has been
+// scanned yet.
+const CatalogNoticeRegistered = "registered"
+
 func CatalogNoticeFrom(raw, id string) *Notice {
+	if raw == CatalogNoticeRegistered && id != "" {
+		return &Notice{Tone: "warn", Text: "Registered " + id + ". The fetch is queued; the scan follows it."}
+	}
 	if raw != "package-deleted" {
 		return nil
 	}
