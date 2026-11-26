@@ -1369,27 +1369,30 @@
   }
 
   .am-cred {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: baseline;
-    gap: 10px;
+    column-gap: 10px;
+    row-gap: 2px;
     font-size: 12px;
   }
 
   .am-cred-user {
-    flex: 1;
-    min-width: 0;
+    grid-column: 1 / -1;
     overflow-wrap: anywhere;
     color: var(--fg);
   }
 
   .am-cred-pass {
+    min-width: 0;
+    overflow-wrap: anywhere;
     color: var(--fg2);
   }
 
   .am-cred-role {
-    flex: 0 0 auto;
     font-size: 11px;
     color: var(--fg3);
+    text-align: right;
   }
 
   .am-signin-unavailable {
