@@ -16,9 +16,11 @@ import (
 
 func (s *Server) cli(c *gin.Context) {
 	screen := view.CLI{
-		Command: cliLoginCommand(s.opts.HubURL),
-		HubURL:  s.opts.HubURL,
-		Notice:  cliNotice(c.Query("outcome"), c.Query("host")),
+		Command:      cliLoginCommand(s.opts.HubURL),
+		HubURL:       s.opts.HubURL,
+		Notice:       cliNotice(c.Query("outcome"), c.Query("host")),
+		Downloads:    s.cliDownloads(c),
+		DownloadBase: strings.TrimRight(s.opts.PublicBaseURL, "/"),
 	}
 
 	code := strings.TrimSpace(c.Query("user_code"))

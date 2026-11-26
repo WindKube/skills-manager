@@ -5,45 +5,131 @@ import "agent-manager/internal/web/view"
 // CLIScreen is the Connect-the-CLI screen: a code entry form, the pending
 // authorisation it names, and the one confirm action.
 templ CLIScreen(s view.CLI) {
-	<div class="am-header">
-		<div class="am-header-text">
-			<h1 class="am-h1">Connect the CLI</h1>
-			<p class="am-lede">
-				Pair a machine with this hub. Run the login command on that machine, then type the
-				code it prints in below.
-			</p>
+	<div data-signals="{_cliInstallOpen: false}">
+		<div class="am-header">
+			<div class="am-header-text">
+				<h1 class="am-h1">Connect the CLI</h1>
+				<p class="am-lede">
+					Pair a machine with this hub. Run the login command on that machine, then type the
+					code it prints in below.
+				</p>
+			</div>
+			<div class="am-actions">
+				<button
+					type="button"
+					class="am-btn am-btn-primary"
+					id="cli-install-open"
+					data-on:click="$_cliInstallOpen = true"
+				>Install amctl</button>
+			</div>
+		</div>
+		@cliInstallModal(s)
+		if s.Notice != nil {
+			<div class={ NoticeClass(*s.Notice) } id="cli-notice">{ s.Notice.Text }</div>
+		}
+		if s.SignedOut {
+			<div class="am-empty am-empty-auth" id="cli-signed-out">
+				Sign in to connect a machine. The hub has no anonymous view.
+			</div>
+		} else if s.Unavailable {
+			<div class="am-notice am-notice-dan" id="cli-unavailable">
+				<p class="am-note">
+					The hub's api did not answer, so this screen cannot look a code up or record an
+					approval. Retry in a moment; if it persists, the api is the thing to look at.
+				</p>
+			</div>
+		} else {
+			<div class="am-screen-body">
+				@cliCodeForm(s)
+				if s.Pending != nil {
+					@cliPending(s)
+				} else if s.Unknown {
+					@cliRejected("cli-unknown", "That code is not one this hub has issued, or it was mistyped. Check it against the terminal and try again.")
+				} else if s.Expired {
+					@cliRejected("cli-expired", "That code has expired. Run the login command again on the machine to get a fresh one.")
+				} else if s.Decided {
+					@cliRejected("cli-decided", "That code has already been approved, denied or used. If the CLI is still waiting, it needs a fresh code.")
+				} else {
+					@cliNoPending(s)
+				}
+			</div>
+		}
+	</div>
+}
+
+// cliInstallModal is hidden before the script runs, like the import modal: a
+// full-viewport overlay painted visible would swallow every click beneath it.
+templ cliInstallModal(s view.CLI) {
+	<div
+		class="am-modal-backdrop"
+		style="display:none;background:rgba(15,18,22,0.42)"
+		data-style:display="$_cliInstallOpen ? 'flex' : 'none'"
+	>
+		<div class="am-modal" role="dialog" aria-modal="true" aria-labelledby="cli-install-title" id="cli-install">
+			<div class="am-modal-head">
+				<div class="am-modal-titles">
+					<div class="am-modal-title" id="cli-install-title">Install amctl</div>
+					<div class="am-modal-sub">Download the CLI from this hub, then sign it in.</div>
+				</div>
+				<button
+					type="button"
+					class="am-modal-close"
+					aria-label="Close"
+					data-on:click="$_cliInstallOpen = false"
+				>×</button>
+			</div>
+			<div class="am-modal-body">
+				<div class="am-label">1 · Download</div>
+				if len(s.Downloads) == 0 {
+					<p class="am-note" id="cli-install-none">
+						This hub serves no amctl downloads. Whoever runs it can point
+						AGENT_MANAGER_CLI_DIST_DIR at the CLI's release archives.
+					</p>
+				} else {
+					<div class="am-cli-dl-list">
+						for _, d := range s.Downloads {
+							<div class="am-cli-dl" id={ "cli-dl-" + d.OS + "-" + d.Arch }>
+								<div class="am-cli-dl-row">
+									<span class="am-cli-dl-label">{ d.Label }</span>
+									<span class="am-cli-dl-version am-mono">{ d.Version }</span>
+									<a class="am-btn" href={ templ.SafeURL(d.Path()) } download>Download</a>
+								</div>
+								if s.DownloadBase != "" {
+									<code class="am-cli-cmd am-mono">{ d.InstallCommand(s.DownloadBase) }</code>
+								}
+								if d.SHA256 != "" {
+									<div class="am-cli-sum">
+										<span class="am-cli-sum-label">SHA-256</span>
+										<span class="am-cli-sum-value am-mono">{ d.SHA256 }</span>
+									</div>
+								}
+							</div>
+						}
+					</div>
+					<p class="am-note">
+						Each archive holds the amctl binary. Check its digest with
+						<span class="am-mono">shasum -a 256</span> before you run it, then put it
+						somewhere on your PATH.
+					</p>
+				}
+				<div class="am-label">2 · Sign in to this hub</div>
+				if s.Command == "" {
+					<p class="am-note">
+						This hub has not been told the address a machine should connect to, so no
+						command can be shown here.
+					</p>
+				} else {
+					<code class="am-cli-cmd am-mono" id="cli-install-login">{ s.Command }</code>
+					<p class="am-note">
+						It prints a code. Type it into this screen to approve the machine.
+					</p>
+				}
+			</div>
+			<div class="am-modal-foot">
+				<button type="button" class="am-btn" data-on:click="$_cliInstallOpen = false">Close</button>
+			</div>
 		</div>
 	</div>
-	if s.Notice != nil {
-		<div class={ NoticeClass(*s.Notice) } id="cli-notice">{ s.Notice.Text }</div>
-	}
-	if s.SignedOut {
-		<div class="am-empty am-empty-auth" id="cli-signed-out">
-			Sign in to connect a machine. The hub has no anonymous view.
-		</div>
-	} else if s.Unavailable {
-		<div class="am-notice am-notice-dan" id="cli-unavailable">
-			<p class="am-note">
-				The hub's api did not answer, so this screen cannot look a code up or record an
-				approval. Retry in a moment; if it persists, the api is the thing to look at.
-			</p>
-		</div>
-	} else {
-		<div class="am-screen-body">
-			@cliCodeForm(s)
-			if s.Pending != nil {
-				@cliPending(s)
-			} else if s.Unknown {
-				@cliRejected("cli-unknown", "That code is not one this hub has issued, or it was mistyped. Check it against the terminal and try again.")
-			} else if s.Expired {
-				@cliRejected("cli-expired", "That code has expired. Run the login command again on the machine to get a fresh one.")
-			} else if s.Decided {
-				@cliRejected("cli-decided", "That code has already been approved, denied or used. If the CLI is still waiting, it needs a fresh code.")
-			} else {
-				@cliNoPending(s)
-			}
-		</div>
-	}
 }
 
 // cliRejected uses cards rather than am-empty, which is full-bleed and this

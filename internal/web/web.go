@@ -61,6 +61,8 @@ type Options struct {
 	OIDCCookieKey []byte
 	// HubURL is the address `amctl login --hub` should name.
 	HubURL string
+	// CLIDistDir holds goreleaser's amctl archives; empty offers no downloads.
+	CLIDistDir string
 	// RiverUI is the scheme and host of River's queue dashboard, or nil when none
 	// runs. Nothing a request carries can steer where the proxy points.
 	RiverUI *url.URL
@@ -150,6 +152,7 @@ func (s *Server) register() {
 	s.engine.POST("/profiles/delete", s.deleteProfile)
 	// The user code never goes in the path: it is bearer-equivalent while valid.
 	s.engine.GET("/cli", s.cli)
+	s.engine.GET("/cli/download/:os/:arch", s.downloadCLI)
 	s.engine.POST("/cli/confirm", s.confirmDeviceCode)
 	s.engine.GET("/tokens", s.tokens)
 	s.engine.POST("/tokens", s.createToken)

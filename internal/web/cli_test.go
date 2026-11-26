@@ -2,7 +2,11 @@ package web_test
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -156,4 +160,107 @@ func TestConfirmDeviceCodeWhenTheApiFailsSaysUnavailable(t *testing.T) {
 	rec := post(t, h, "/cli/confirm", url.Values{"user_code": {"HKQ2-9FTL"}})
 	require.Equal(t, http.StatusSeeOther, rec.Code)
 	require.Contains(t, rec.Header().Get("Location"), "outcome=unavailable")
+}
+
+func cliDist(t *testing.T, names ...string) string {
+	t.Helper()
+	dir := t.TempDir()
+	for _, name := range names {
+		require.NoError(t, os.WriteFile(filepath.Join(dir, name), []byte("archive:"+name), 0o600))
+	}
+	return dir
+}
+
+func cliDownloadServer(t *testing.T, dist string) http.Handler {
+	t.Helper()
+	_, h := newServerWith(t, web.Options{
+		HubURL:        "http://localhost:8082",
+		PublicBaseURL: "https://hub.example.test/",
+		CLIDistDir:    dist,
+	})
+	return h
+}
+
+func TestCLIInstallDialogListsOnlyThePlatformsThisHubHoldsAnArchiveFor(t *testing.T) {
+	h := cliDownloadServer(t, cliDist(t,
+		"amctl_0.9.0_linux_amd64.tar.gz",
+		"amctl_0.9.0_darwin_arm64.tar.gz",
+		"checksums.txt",
+	))
+
+	body := get(t, h, "/cli").Body.String()
+	require.Contains(t, body, `id="cli-install"`)
+	require.Contains(t, body, `href="/cli/download/darwin/arm64"`)
+	require.Contains(t, body, `href="/cli/download/linux/amd64"`)
+	require.NotContains(t, body, "cli-dl-linux-arm64")
+	require.NotContains(t, body, "cli-dl-darwin-amd64")
+	require.Contains(t, body, "curl -fsSL https://hub.example.test/cli/download/linux/amd64 | tar -xz amctl")
+	require.Contains(t, body, "amctl login --hub http://localhost:8082")
+	require.Less(t, strings.Index(body, "cli-dl-darwin-arm64"), strings.Index(body, "cli-dl-linux-amd64"))
+}
+
+func TestCLIInstallCommandNamesTheConfiguredOriginNotTheRequestHost(t *testing.T) {
+	h := cliDownloadServer(t, cliDist(t, "amctl_0.9.0_linux_amd64.tar.gz"))
+
+	req := httptest.NewRequest(http.MethodGet, "/cli", http.NoBody)
+	req.Host = "attacker.example"
+	req.AddCookie(&http.Cookie{Name: "am_session", Value: "screen-test-session"})
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+
+	require.NotContains(t, rec.Body.String(), "attacker.example")
+	require.Contains(t, rec.Body.String(), "https://hub.example.test/cli/download/linux/amd64")
+}
+
+func TestCLIInstallDialogWithNoArchivesSaysSoAndStillShowsTheLoginCommand(t *testing.T) {
+	_, h := cliServer(t)
+
+	body := get(t, h, "/cli").Body.String()
+	require.Contains(t, body, "cli-install-none")
+	require.NotContains(t, body, "/cli/download/")
+	require.Contains(t, body, `id="cli-install-login"`)
+}
+
+func TestCLIDownloadServesTheNewestArchiveWithoutASession(t *testing.T) {
+	h := cliDownloadServer(t, cliDist(t,
+		"amctl_0.9.0_linux_amd64.tar.gz",
+		"amctl_0.10.0_linux_amd64.tar.gz",
+	))
+
+	rec := getSignedOut(t, h, "/cli/download/linux/amd64")
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "archive:amctl_0.10.0_linux_amd64.tar.gz", rec.Body.String())
+	require.Contains(t, rec.Header().Get("Content-Disposition"), "amctl_0.10.0_linux_amd64.tar.gz")
+}
+
+func TestCLIDownloadRefusesPlatformsItDoesNotHoldOrDoesNotKnow(t *testing.T) {
+	h := cliDownloadServer(t, cliDist(t, "amctl_0.9.0_linux_amd64.tar.gz"))
+
+	for _, target := range []string{"/cli/download/darwin/arm64", "/cli/download/windows/amd64"} {
+		require.Equal(t, http.StatusNotFound, getSignedOut(t, h, target).Code, target)
+	}
+
+	// The guard cleans this to /cli/etc, which is not public, so it never reaches the handler.
+	require.NotEqual(t, http.StatusOK, getSignedOut(t, h, "/cli/download/linux/..%2f..%2fetc").Code)
+}
+
+func TestCLIDownloadWithNoDirectoryConfiguredIsNotFound(t *testing.T) {
+	_, h := cliServer(t)
+	require.Equal(t, http.StatusNotFound, getSignedOut(t, h, "/cli/download/linux/amd64").Code)
+}
+
+func TestCLIInstallDialogShowsTheDigestGoreleaserRecordedForEachArchive(t *testing.T) {
+	linux := strings.Repeat("a", 64)
+	dist := cliDist(t, "amctl_0.9.0_linux_amd64.tar.gz", "amctl_0.9.0_darwin_arm64.tar.gz")
+	require.NoError(t, os.WriteFile(filepath.Join(dist, "checksums.txt"), []byte(
+		linux+"  amctl_0.9.0_linux_amd64.tar.gz\n"+
+			"not-a-digest  amctl_0.9.0_darwin_arm64.tar.gz\n"+
+			strings.Repeat("b", 64)+"  amctl_0.8.0_linux_amd64.tar.gz\n",
+	), 0o600))
+
+	body := get(t, cliDownloadServer(t, dist), "/cli").Body.String()
+	require.Contains(t, body, linux)
+	require.NotContains(t, body, "not-a-digest")
+	require.NotContains(t, body, strings.Repeat("b", 64))
+	require.Equal(t, 1, strings.Count(body, "am-cli-sum-value"))
 }

@@ -107,6 +107,15 @@ web:
     # base64 of at least 32 random bytes (`openssl rand -base64 32`).
     AGENT_MANAGER_WEB_COOKIE_KEY: ""
   existingSecret: ""
+  # amctl archives the Connect-the-CLI screen offers for download: goreleaser's
+  # dist/ (amctl_<version>_<os>_<arch>.tar.gz and checksums.txt), as any pod
+  # volume source. It is mounted read-only. Empty offers no downloads.
+  #   cliDist:
+  #     volume:
+  #       persistentVolumeClaim:
+  #         claimName: amctl-dist
+  cliDist:
+    volume: {}
   resources:
     requests: {cpu: 50m, memory: 64Mi}
     limits: {memory: 256Mi}

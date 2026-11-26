@@ -166,8 +166,14 @@ services:
       # this role holds none. Unset it and the River Dashboard entry renders
       # disabled with the reason on it rather than disappearing.
       AGENT_MANAGER_RIVER_UI_URL: http://queue-ui:8080
+      # amctl archives the Connect-the-CLI screen offers for download. Fill it with
+      # `goreleaser release --snapshot --clean --skip=publish` in cli/; empty, the
+      # install dialog says no downloads are served.
+      AGENT_MANAGER_CLI_DIST_DIR: /srv/amctl
       # A local-development value, so a sign-in survives `docker compose restart web`.
       AGENT_MANAGER_WEB_COOKIE_KEY: bG9jYWwtZGV2ZWxvcG1lbnQtd2ViLWNvb2tpZS1rZXktMzI=
+    volumes:
+      - ./cli/dist:/srv/amctl:ro
     command: ["serve", "web"]
     healthcheck:
       test: ["CMD", "/usr/local/bin/agent-manager", "healthcheck", "--url", "http://127.0.0.1:8080/healthz"]

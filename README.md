@@ -137,7 +137,8 @@ a real sign-in, not a placeholder:
 - **Profiles** — the list a viewer may read, and a detail screen with per-entry pin or float,
   sharing, sync targets, and publish.
 - **Connect the CLI** — the device-flow pairing screen: enter the code a machine printed,
-  confirm, done.
+  confirm, done. Its install dialog offers amctl for download from the hub itself, from the
+  goreleaser archives in `AGENT_MANAGER_CLI_DIST_DIR`, with the login command for this hub.
 - **Organisation** — identity provider settings and connection test, scan gate and the other
   policy toggles, group-to-role mappings, and categories.
 - **Storage** — object count, size, region, cache hit rate and recent fetches, read from the

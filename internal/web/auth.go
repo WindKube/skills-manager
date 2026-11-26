@@ -530,6 +530,10 @@ func unauthenticatedPath(raw string) bool {
 		return true
 	case clean == "/auth" || strings.HasPrefix(clean, "/auth/"):
 		return true
+	// A machine needs amctl before it can hold a session, and the archive is the
+	// same public release artefact, carrying nothing of this hub's.
+	case strings.HasPrefix(clean, "/cli/download/"):
+		return true
 	default:
 		return false
 	}

@@ -68,6 +68,9 @@ type Web struct {
 	// RiverUIURL is River's queue dashboard; empty shows its entry disabled.
 	// The dashboard holds the queue credential, this role holds none.
 	RiverUIURL string `env:"RIVER_UI_URL"`
+	// CLIDistDir is a goreleaser dist/ of amctl archives the web role serves;
+	// empty offers no downloads.
+	CLIDistDir string `env:"CLI_DIST_DIR"`
 	// CookieKey is base64 of at least 32 bytes signing the sign-in round-trip
 	// cookie. Every replica must share it; empty draws a per-process key.
 	CookieKey string `env:"WEB_COOKIE_KEY"`
