@@ -123,6 +123,7 @@ func sweep() []sweptScreen {
 			return components.FacetOptions(components.Facet{Name: "tag", Label: "Tags"})
 		}),
 		inShell("ImportModal", func() templ.Component { return components.ImportModal(components.Import{}) }),
+		inShell("CreateScreen", func() templ.Component { return components.CreateScreen(components.Create{}) }),
 		inShell("ImportPreviewPanel", func() templ.Component { return components.ImportPreviewPanel(nil) }),
 		inShell("ImportResultBanner", func() templ.Component { return components.ImportResultBanner(nil) }),
 		inShell("CatalogNotice", func() templ.Component { return components.CatalogNotice(nil) }),

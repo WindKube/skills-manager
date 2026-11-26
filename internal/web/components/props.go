@@ -7,7 +7,9 @@ package components
 import (
 	"encoding/json"
 	"strconv"
+	"strings"
 
+	"agent-manager/internal/web/authoring"
 	"agent-manager/internal/web/view"
 )
 
@@ -476,4 +478,41 @@ func VersionDeleteToggleExpr(version string) string {
 // display:flex, and data-show only removes display, leaving it block.
 func VersionDeleteFormStyleExpr(version string) string {
 	return "$_deleteVersion === '" + version + "' ? 'flex' : 'none'"
+}
+
+// Create is the editor page; PackageID set means it publishes the next version
+// of an existing package.
+type Create struct {
+	Starters []authoring.Starter
+	Starter  string
+	Seed     authoring.Seed
+
+	PackageID string
+	From      string
+	Skipped   []string
+	Refusal   string
+
+	Publisher    string
+	Name         string
+	Version      string
+	Category     string
+	Categories   []string
+	Visibility   string
+	Visibilities []view.ImportOption
+}
+
+func (c Create) Versioning() bool { return c.PackageID != "" }
+
+var warnNotice = NoticeClass(view.Notice{Tone: "warn"})
+
+func joinPaths(paths []string) string { return strings.Join(paths, ", ") }
+
+const createFormSelector = "#create-form"
+
+func CreatePreviewExpr() string {
+	return "@post('/catalog/create/preview', {contentType: 'form', selector: '" + createFormSelector + "'})"
+}
+
+func CreateSubmitExpr() string {
+	return "@post('/catalog/create', {contentType: 'form', selector: '" + createFormSelector + "'})"
 }

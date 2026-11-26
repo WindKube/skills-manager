@@ -121,9 +121,13 @@ func (s *Server) register() {
 	s.engine.GET("/catalog/facet/:name", s.catalogFacet)
 	s.engine.POST("/catalog/import/preview", s.importPreview)
 	s.engine.POST("/catalog/import", s.importRegister)
+	s.engine.GET("/catalog/create", s.createPackage)
+	s.engine.POST("/catalog/create/preview", s.createPreview)
+	s.engine.POST("/catalog/create", s.createPublish)
 
 	// A package id is two segments; gin routes on the decoded path, so an encoded id still splits.
 	s.engine.GET("/packages/:namespace/:name", s.packageDetail)
+	s.engine.GET("/packages/:namespace/:name/new-version", s.newVersion)
 	// Writes are POST forms that redirect, so a reload cannot resubmit them.
 	s.engine.POST("/packages/visibility", s.setPackageVisibility)
 	s.engine.POST("/packages/tracking", s.setPackageTracking)

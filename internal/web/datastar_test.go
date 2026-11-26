@@ -32,7 +32,7 @@ func TestEveryDatastarAttributeNamesARegisteredPlugin(t *testing.T) {
 	plugins := registeredPlugins(t)
 
 	_, handler := newServer(t)
-	for _, path := range []string{"/catalog", "/scanner", "/profiles", "/storage", "/org", "/cli", "/audit", "/runtime"} {
+	for _, path := range []string{"/catalog", "/catalog/create", "/scanner", "/profiles", "/storage", "/org", "/cli", "/audit", "/runtime"} {
 		t.Run(path, func(t *testing.T) {
 			body := get(t, handler, path).Body.String()
 

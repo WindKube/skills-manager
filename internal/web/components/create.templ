@@ -1,0 +1,155 @@
+package components
+
+
+
+// The editor's file state lives in app.js (amEditor) and reaches the server only
+// as the hidden `files` field, so the page posts a plain form exactly as the
+// import modal does and the server never holds a draft.
+
+templ CreateScreen(c Create) {
+	<div data-signals="{_createBusy: false}">
+		<div class="am-detail-head">
+			if c.Versioning() {
+				<a class="am-back" href={ templ.SafeURL("/packages/" + c.PackageID) }>← { c.PackageID }</a>
+				<h1 class="am-h1">New version of { c.Name }</h1>
+				<p class="am-lede">
+					Versions never change once published, so editing { c.PackageID } publishes the next one.
+					The editor opens on { c.From }'s files.
+				</p>
+			} else {
+				<a class="am-back" href="/catalog">← Catalog</a>
+				<h1 class="am-h1">Create a package</h1>
+				<p class="am-lede">
+					Write a skill or plugin here instead of uploading one. It is published exactly as an upload
+					is: validated, fetched, scanned, and stored as an immutable version.
+				</p>
+			}
+		</div>
+		if c.Refusal != "" {
+			<div class={ warnNotice } id="create-refusal">{ c.Refusal }</div>
+		} else {
+			@createEditor(c)
+		}
+	</div>
+}
+
+templ createEditor(c Create) {
+	if !c.Versioning() {
+		<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:4px 0 16px" id="create-starters">
+			<span style="font-size:12px;color:var(--fg3)">Start from</span>
+			for _, s := range c.Starters {
+				<a
+					class={ "am-chip", "am-starter", templ.KV("am-chip-on", s.ID == c.Starter) }
+					href={ templ.SafeURL("/catalog/create?starter=" + s.ID) }
+					title={ s.Description }
+				>{ s.Label }</a>
+			}
+		</div>
+	}
+	if len(c.Skipped) > 0 {
+		<div class={ warnNotice } id="create-skipped">
+			These files are binary or too large to edit here and are not in the editor, so the new version
+			will not contain them: { joinPaths(c.Skipped) }
+		</div>
+	}
+	<div class={ warnNotice } id="am-draft-note" style="display:none">
+		Restored your unsaved draft from this browser.
+		<button type="button" class="am-btn" id="am-draft-discard" style="margin-left:8px">Discard it</button>
+	</div>
+	<form id="create-form" enctype="multipart/form-data" data-on:submit={ CreateSubmitExpr() }>
+		<input type="hidden" name="files" id="am-files-field"/>
+		<div class="am-card" id="am-editor" style="display:grid;grid-template-columns:minmax(200px,260px) 1fr;min-height:480px;overflow:hidden">
+			<div style="border-right:1px solid var(--bd);display:flex;flex-direction:column;min-width:0">
+				<div style="padding:12px 14px;border-bottom:1px solid var(--bd);font-size:12px;color:var(--fg3)">Files</div>
+				<ul id="am-file-list" style="list-style:none;margin:0;padding:6px;flex:1;overflow:auto" aria-label="Files"></ul>
+				<div style="padding:10px;border-top:1px solid var(--bd);display:flex;flex-direction:column;gap:8px">
+					<div style="display:flex;gap:6px">
+						<input
+							id="am-new-path"
+							class="am-search am-import-field am-mono"
+							style="flex:1;min-width:0"
+							aria-label="New file path"
+							placeholder="references/notes.md"
+						/>
+						<button type="button" class="am-btn" id="am-new-file">Add</button>
+					</div>
+					<select id="am-example" class="am-search am-import-field" aria-label="Add an example file">
+						<option value="">Add an example file…</option>
+					</select>
+				</div>
+			</div>
+			<div style="display:flex;flex-direction:column;min-width:0">
+				<div style="padding:8px 14px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:8px">
+					<span class="am-mono" id="am-current" style="flex:1;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+					<button type="button" class="am-btn" id="am-rename">Rename</button>
+					<button type="button" class="am-btn" id="am-delete">Delete</button>
+				</div>
+				<textarea
+					id="am-buffer"
+					class="am-mono"
+					spellcheck="false"
+					aria-label="File content"
+					style="flex:1;min-height:420px;border:0;resize:vertical;padding:14px;font-size:12.5px;line-height:1.55;background:var(--surface);color:var(--fg);outline:none;tab-size:2"
+				></textarea>
+			</div>
+		</div>
+		<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:18px">
+			@createField("create-publisher", "Publisher") {
+				<input id="create-publisher" name="publisher" class="am-search am-import-field am-mono" placeholder="example/platform" value={ c.Publisher } readonly?={ c.Versioning() }/>
+			}
+			@createField("create-name", "Name") {
+				<input id="create-name" name="name" class="am-search am-import-field am-mono" placeholder="code-review" value={ c.Name } readonly?={ c.Versioning() }/>
+			}
+			@createField("create-version", "Version") {
+				<input id="create-version" name="version" class="am-search am-import-field am-mono" placeholder="1.0.0" value={ c.Version }/>
+			}
+			@createField("create-category", "Category") {
+				<select id="create-category" name="category" class="am-search am-import-field">
+					for _, name := range c.Categories {
+						<option value={ name } selected?={ name == c.Category }>{ name }</option>
+					}
+				</select>
+			}
+			@createField("create-visibility", "Visibility") {
+				<select id="create-visibility" name="visibility" class="am-search am-import-field">
+					for _, option := range c.Visibilities {
+						<option value={ option.Value } disabled?={ option.Disabled } title={ option.Reason } selected?={ option.Value == c.Visibility }>{ option.Label }</option>
+					}
+				</select>
+			}
+			<div style="flex:1 1 100%;display:flex;flex-direction:column;gap:6px">
+				<label for="create-tags" style="font-size:12px;color:var(--fg3)">Tags</label>
+				<input id="create-tags" name="tags" class="am-search am-import-field am-mono" placeholder="terraform, aws, guardrails" maxlength={ ImportTagsLimit() }/>
+			</div>
+		</div>
+		<div style="margin-top:16px">
+			@ImportResultBanner(nil)
+		</div>
+		<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
+			<button
+				type="button"
+				class="am-btn"
+				data-indicator="_createBusy"
+				data-attr:disabled="$_createBusy ? 'disabled' : null"
+				data-on:click={ CreatePreviewExpr() }
+			>Validate</button>
+			<button
+				type="submit"
+				class="am-btn am-btn-primary"
+				data-indicator="_createBusy"
+				data-attr:disabled="$_createBusy ? 'disabled' : null"
+			>Publish</button>
+		</div>
+		<div style="margin-top:16px">
+			@ImportPreviewPanel(nil)
+		</div>
+	</form>
+	@templ.JSONScript("am-editor-seed", c.Seed)
+}
+
+templ createField(id, label string) {
+	<div style="flex:1;min-width:160px;display:flex;flex-direction:column;gap:6px">
+		<label for={ id } style="font-size:12px;color:var(--fg3)">{ label }</label>
+		{ children... }
+	</div>
+}

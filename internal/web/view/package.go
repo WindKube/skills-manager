@@ -844,3 +844,9 @@ func validIDSegment(segment string) bool {
 	}
 	return true
 }
+
+// EditableInBrowser: only an uploaded package's next version can come from the editor. A git or archive-URL
+// package's next version comes from its source, and an edit here would fork it silently.
+func EditableInBrowser(source *Provenance) bool {
+	return source == nil || source.Kind == "upload"
+}

@@ -38,6 +38,9 @@ templ PackageScreen(p view.Package) {
 			}
 			@signerControl(p.ID, p.Signer)
 			@addToProfile(p)
+			if view.EditableInBrowser(p.Source) {
+				<a class="am-btn" id="package-new-version" href={ templ.SafeURL("/packages/" + p.ID + "/new-version") }>New version</a>
+			}
 			@packageDeleteControl(p)
 		}
 	</div>
